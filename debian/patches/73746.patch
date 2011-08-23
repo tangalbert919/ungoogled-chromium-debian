@@ -1,0 +1,16 @@
+--- a/src/third_party/WebKit/WebCore/svg/SVGCursorElement.cpp
++++ b/src/third_party/WebKit/WebCore/svg/SVGCursorElement.cpp
+@@ -73,8 +73,11 @@ void SVGCursorElement::addClient(SVGElem
+ 
+ void SVGCursorElement::removeClient(SVGElement* element)
+ {
+-    m_clients.remove(element);
+-    element->cursorElementRemoved();
++    HashSet<SVGElement*>::iterator it = m_clients.find(element);
++    if (it != m_clients.end()) {
++        m_clients.remove(it);
++        element->cursorElementRemoved();
++    }
+ }
+ 
+ void SVGCursorElement::removeReferencedElement(SVGElement* element)

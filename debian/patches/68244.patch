@@ -1,0 +1,34 @@
+--- a/src/chrome/browser/renderer_host/audio_renderer_host.cc
++++ b/src/chrome/browser/renderer_host/audio_renderer_host.cc
+@@ -455,7 +455,8 @@ void AudioRendererHost::OnSetVolume(cons
+   }
+ 
+   // Make sure the volume is valid.
+-  CHECK(volume >= 0 && volume <= 1.0);
++  if (volume < 0 || volume > 1.0)
++      return;
+   entry->controller->SetVolume(volume);
+ }
+ 
+--- a/src/media/audio/audio_util.cc
++++ b/src/media/audio/audio_util.cc
+@@ -93,7 +93,8 @@ bool AdjustVolume(void* buf,
+                   int bytes_per_sample,
+                   float volume) {
+   DCHECK(buf);
+-  DCHECK(volume >= 0.0f && volume <= 1.0f);
++  if (volume < 0.0f || volume > 1.0f)
++      return false;
+   if (volume == 1.0f) {
+     return true;
+   } else if (volume == 0.0f) {
+@@ -129,7 +130,8 @@ bool FoldChannels(void* buf,
+                   int bytes_per_sample,
+                   float volume) {
+   DCHECK(buf);
+-  DCHECK(volume >= 0.0f && volume <= 1.0f);
++  if (volume < 0.0f || volume > 1.0f)
++      return false;
+   if (channels >= 5 && channels <= 6 && bytes_per_sample > 0) {
+     int sample_count = buflen / (channels * bytes_per_sample);
+     if (bytes_per_sample == 1) {

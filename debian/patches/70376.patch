@@ -1,0 +1,42 @@
+--- a/src/base/pickle.cc
++++ b/src/base/pickle.cc
+@@ -406,6 +406,9 @@ const char* Pickle::FindNext(size_t head
+   DCHECK(header_size == AlignInt(header_size, sizeof(uint32)));
+   DCHECK(header_size <= static_cast<size_t>(kPayloadUnit));
+ 
++  if (static_cast<size_t>(end - start) < sizeof(Header))
++    return NULL;
++
+   const Header* hdr = reinterpret_cast<const Header*>(start);
+   const char* payload_base = start + header_size;
+   const char* payload_end = payload_base + hdr->payload_size;
+--- a/src/base/pickle.h
++++ b/src/base/pickle.h
+@@ -235,6 +235,7 @@ class Pickle {
+ 
+   FRIEND_TEST_ALL_PREFIXES(PickleTest, Resize);
+   FRIEND_TEST_ALL_PREFIXES(PickleTest, FindNext);
++  FRIEND_TEST_ALL_PREFIXES(PickleTest, FindNextWithIncompleteHeader);
+   FRIEND_TEST_ALL_PREFIXES(PickleTest, IteratorHasRoom);
+ };
+ 
+--- a/src/base/pickle_unittest.cc
++++ b/src/base/pickle_unittest.cc
+@@ -171,6 +171,17 @@ TEST(PickleTest, FindNext) {
+   EXPECT_TRUE(end == Pickle::FindNext(pickle.header_size_, start, end + 1));
+ }
+ 
++TEST(PickleTest, FindNextWithIncompleteHeader) {
++  size_t header_size = sizeof(Pickle::Header);
++  scoped_array<char> buffer(new char[header_size - 1]);
++  memset(buffer.get(), 0x1, header_size - 1);
++
++  const char* start = buffer.get();
++  const char* end = start + header_size - 1;
++
++  EXPECT_TRUE(NULL == Pickle::FindNext(header_size, start, end));
++}
++
+ TEST(PickleTest, IteratorHasRoom) {
+   Pickle pickle;
+   EXPECT_TRUE(pickle.WriteInt(1));

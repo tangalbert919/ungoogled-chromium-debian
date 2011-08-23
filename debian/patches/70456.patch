@@ -1,0 +1,44 @@
+--- a/src/base/debug_util_posix.cc
++++ b/src/base/debug_util_posix.cc
+@@ -256,6 +256,9 @@ bool DebugUtil::BeingDebugged() {
+ // static
+ void DebugUtil::BreakDebugger() {
+   DEBUG_BREAK();
++#if defined(NDEBUG)
++  _exit(1);
++#endif
+ }
+ 
+ StackTrace::StackTrace() {
+--- a/src/chrome/app/chrome_dll_main.cc
++++ b/src/chrome/app/chrome_dll_main.cc
+@@ -155,6 +155,7 @@ void InvalidParameter(const wchar_t* exp
+                       const wchar_t* file, unsigned int line,
+                       uintptr_t reserved) {
+   __debugbreak();
++  _exit(1);
+ }
+ 
+ void PureCall() {
+@@ -180,6 +181,7 @@ void OnNoMemory() {
+   // the buffer is then used, it provides a handy mapping of memory starting at
+   // address 0 for an attacker to utilize.
+   __debugbreak();
++  _exit(1);
+ }
+ #pragma warning(pop)
+ 
+--- a/src/chrome/plugin/plugin_main.cc
++++ b/src/chrome/plugin/plugin_main.cc
+@@ -120,8 +120,10 @@ int PluginMain(const MainFunctionParams&
+         BOOL result = run_security_tests(&test_count);
+         DCHECK(result) << "Test number " << test_count << " has failed.";
+         // If we are in release mode, crash or debug the process.
+-        if (!result)
++        if (!result) {
+           __debugbreak();
++	  _exit(1);
++	}
+       }
+ 
+       FreeLibrary(sandbox_test_module);
