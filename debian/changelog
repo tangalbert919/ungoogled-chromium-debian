@@ -1,8 +1,10 @@
 chromium-browser (6.0.472.63~r59945-5+squeeze6) UNRELEASED; urgency=low
 
   * Added gbp.conf
+  * Fixed CVE-2011-2824: Use-after-free with counter nodes.
+    Credit to miaubiz.
 
- -- Giuseppe Iuculano <iuculano@debian.org>  Wed, 31 Aug 2011 17:07:52 +0200
+ -- Giuseppe Iuculano <iuculano@debian.org>  Wed, 31 Aug 2011 17:30:01 +0200
 
 chromium-browser (6.0.472.63~r59945-5+squeeze5) stable-security; urgency=low
 
