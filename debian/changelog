@@ -5,8 +5,10 @@ chromium-browser (6.0.472.63~r59945-5+squeeze6) UNRELEASED; urgency=low
     Credit to miaubiz.
   * Fixed CVE-2011-2818: Use-after-free in display box rendering.
     Credit to Martin Barbella.
+  * Fixed CVE-2011-2800: Leak of client-side redirect target.
+    Credit to Juho Nurminen
 
- -- Giuseppe Iuculano <iuculano@debian.org>  Wed, 31 Aug 2011 17:42:42 +0200
+ -- Giuseppe Iuculano <iuculano@debian.org>  Wed, 31 Aug 2011 17:47:56 +0200
 
 chromium-browser (6.0.472.63~r59945-5+squeeze5) stable-security; urgency=low
 
