@@ -1,0 +1,313 @@
+--- a/src/third_party/WebKit/WebCore/history/HistoryItem.cpp
++++ b/src/third_party/WebKit/WebCore/history/HistoryItem.cpp
+@@ -59,6 +59,8 @@ HistoryItem::HistoryItem()
+     , m_visitCount(0)
+     , m_itemSequenceNumber(generateSequenceNumber())
+     , m_documentSequenceNumber(generateSequenceNumber())
++    , m_next(0)
++    , m_prev(0)
+ {
+ }
+ 
+@@ -73,6 +75,8 @@ HistoryItem::HistoryItem(const String& u
+     , m_visitCount(0)
+     , m_itemSequenceNumber(generateSequenceNumber())
+     , m_documentSequenceNumber(generateSequenceNumber())
++    , m_next(0)
++    , m_prev(0)
+ {    
+     iconDatabase()->retainIconForPageURL(m_urlString);
+ }
+@@ -89,6 +93,8 @@ HistoryItem::HistoryItem(const String& u
+     , m_visitCount(0)
+     , m_itemSequenceNumber(generateSequenceNumber())
+     , m_documentSequenceNumber(generateSequenceNumber())
++    , m_next(0)
++    , m_prev(0)
+ {
+     iconDatabase()->retainIconForPageURL(m_urlString);
+ }
+@@ -106,6 +112,8 @@ HistoryItem::HistoryItem(const KURL& url
+     , m_visitCount(0)
+     , m_itemSequenceNumber(generateSequenceNumber())
+     , m_documentSequenceNumber(generateSequenceNumber())
++    , m_next(0)
++    , m_prev(0)
+ {    
+     iconDatabase()->retainIconForPageURL(m_urlString);
+ }
+@@ -158,6 +166,38 @@ PassRefPtr<HistoryItem> HistoryItem::cop
+     return adoptRef(new HistoryItem(*this));
+ }
+ 
++void HistoryItem::reset()
++{
++    iconDatabase()->releaseIconForPageURL(m_urlString);
++
++    m_urlString = String();
++    m_originalURLString = String();
++    m_referrer = String();
++    m_target = String();
++    m_parent = String();
++    m_title = String();
++    m_displayTitle = String();
++
++    m_lastVisitedTime = 0;
++    m_lastVisitWasHTTPNonGet = false;
++
++    m_lastVisitWasFailure = false;
++    m_isTargetItem = false;
++    m_visitCount = 0;
++    m_dailyVisitCounts.clear();
++    m_weeklyVisitCounts.clear();
++
++    m_redirectURLs.clear();
++
++    m_itemSequenceNumber = generateSequenceNumber();
++
++    m_stateObject = 0;
++    m_documentSequenceNumber = generateSequenceNumber();
++
++    m_formData = 0;
++    m_formContentType = String();
++}
++
+ const String& HistoryItem::urlString() const
+ {
+     return m_urlString;
+--- a/src/third_party/WebKit/WebCore/history/HistoryItem.h
++++ b/src/third_party/WebKit/WebCore/history/HistoryItem.h
+@@ -88,6 +88,9 @@ public:
+     
+     PassRefPtr<HistoryItem> copy() const;
+     
++    // Resets the HistoryItem to its initial state, as returned by create().
++    void reset();
++
+     const String& originalURLString() const;
+     const String& urlString() const;
+     const String& title() const;
+@@ -141,7 +144,7 @@ public:
+ 
+     void setDocumentSequenceNumber(long long number) { m_documentSequenceNumber = number; }
+     long long documentSequenceNumber() const { return m_documentSequenceNumber; }
+-    
++
+     void setFormInfoFromRequest(const ResourceRequest&);
+     void setFormData(PassRefPtr<FormData>);
+     void setFormContentType(const String&);
+@@ -245,11 +248,19 @@ private:
+ 
+     OwnPtr<Vector<String> > m_redirectURLs;
+ 
++    // If two HistoryItems have the same item sequence number, then they are
++    // clones of one another.  Traversing history from one such HistoryItem to
++    // another is a no-op.  HistoryItem clones are created for parent and
++    // sibling frames when only a subframe navigates.
+     long long m_itemSequenceNumber;
+ 
++    // If two HistoryItems have the same document sequence number, then they
++    // refer to the same instance of a document.  Traversing history from one
++    // such HistoryItem to another preserves the document.
++    long long m_documentSequenceNumber;
++
+     // Support for HTML5 History
+     RefPtr<SerializedScriptValue> m_stateObject;
+-    long long m_documentSequenceNumber;
+     
+     // info used to repost form data
+     RefPtr<FormData> m_formData;
+--- a/src/third_party/WebKit/WebCore/loader/HistoryController.cpp
++++ b/src/third_party/WebKit/WebCore/loader/HistoryController.cpp
+@@ -233,6 +233,10 @@ void HistoryController::updateForBackFor
+ 
+     // Must grab the current scroll position before disturbing it
+     saveScrollPositionAndViewStateToItem(m_previousItem.get());
++
++    // When traversing history, we may end up redirecting to a different URL
++    // this time (e.g., due to cookies).  See http://webkit.org/b/49654.
++    updateCurrentItem();
+ }
+ 
+ void HistoryController::updateForReload()
+@@ -247,11 +251,12 @@ void HistoryController::updateForReload(
+     
+         if (m_frame->loader()->loadType() == FrameLoadTypeReload || m_frame->loader()->loadType() == FrameLoadTypeReloadFromOrigin)
+             saveScrollPositionAndViewStateToItem(m_currentItem.get());
+-    
+-        // Sometimes loading a page again leads to a different result because of cookies. Bugzilla 4072
+-        if (m_frame->loader()->documentLoader()->unreachableURL().isEmpty())
+-            m_currentItem->setURL(m_frame->loader()->documentLoader()->requestURL());
+     }
++
++
++    // When traversing history, we may end up redirecting to a different URL
++    // this time (e.g., due to cookies).  See http://webkit.org/b/49654.
++    updateCurrentItem();
+ }
+ 
+ // There are 3 things you might think of as "history", all of which are handled by these functions.
+@@ -283,9 +288,9 @@ void HistoryController::updateForStandar
+             if (Page* page = m_frame->page())
+                 page->setGlobalHistoryItem(needPrivacy ? 0 : page->backForwardList()->currentItem());
+         }
+-    } else if (frameLoader->documentLoader()->unreachableURL().isEmpty() && m_currentItem) {
+-        m_currentItem->setURL(frameLoader->documentLoader()->url());
+-        m_currentItem->setFormInfoFromRequest(frameLoader->documentLoader()->request());
++    } else {
++        // The client redirect replaces the current history item.
++        updateCurrentItem();
+     }
+ 
+     if (!historyURL.isEmpty() && !needPrivacy) {
+@@ -322,14 +327,12 @@ void HistoryController::updateForRedirec
+                     page->setGlobalHistoryItem(needPrivacy ? 0 : page->backForwardList()->currentItem());
+             }
+         }
+-        if (m_currentItem) {
+-            m_currentItem->setURL(m_frame->loader()->documentLoader()->url());
+-            m_currentItem->setFormInfoFromRequest(m_frame->loader()->documentLoader()->request());
+-        }
++        // The client redirect replaces the current history item.
++        updateCurrentItem();
+     } else {
+         Frame* parentFrame = m_frame->tree()->parent();
+         if (parentFrame && parentFrame->loader()->history()->m_currentItem)
+-            parentFrame->loader()->history()->m_currentItem->setChildItem(createItem(true));
++            parentFrame->loader()->history()->m_currentItem->setChildItem(createItem());
+     }
+ 
+     if (!historyURL.isEmpty() && !needPrivacy) {
+@@ -434,12 +437,14 @@ void HistoryController::setProvisionalIt
+     m_provisionalItem = item;
+ }
+ 
+-PassRefPtr<HistoryItem> HistoryController::createItem(bool useOriginal)
++void HistoryController::initializeItem(HistoryItem* item)
+ {
+     DocumentLoader* docLoader = m_frame->loader()->documentLoader();
+     
+-    KURL unreachableURL = docLoader ? docLoader->unreachableURL() : KURL();
+-    
++    ASSERT(docLoader);
++
++    KURL unreachableURL = docLoader->unreachableURL();
++
+     KURL url;
+     KURL originalURL;
+ 
+@@ -447,15 +452,10 @@ PassRefPtr<HistoryItem> HistoryControlle
+         url = unreachableURL;
+         originalURL = unreachableURL;
+     } else {
+-        originalURL = docLoader ? docLoader->originalURL() : KURL();
+-        if (useOriginal)
+-            url = originalURL;
+-        else if (docLoader)
+-            url = docLoader->requestURL();
++        url = docLoader->url();
++        originalURL = docLoader->originalURL();
+     }
+-
+-    LOG(History, "WebCoreHistory: Creating item for %s", url.string().ascii().data());
+-    
++
+     // Frames that have never successfully loaded any content
+     // may have no URL at all. Currently our history code can't
+     // deal with such things, so we nip that in the bud here.
+@@ -468,22 +468,26 @@ PassRefPtr<HistoryItem> HistoryControlle
+     
+     Frame* parentFrame = m_frame->tree()->parent();
+     String parent = parentFrame ? parentFrame->tree()->name() : "";
+-    String title = docLoader ? docLoader->title() : "";
++    String title = docLoader->title();
+ 
+-    RefPtr<HistoryItem> item = HistoryItem::create(url, m_frame->tree()->name(), parent, title);
++    item->setURL(url);
++    item->setTarget(m_frame->tree()->name());
++    item->setParent(parent);
++    item->setTitle(title);
+     item->setOriginalURLString(originalURL.string());
+ 
+-    if (!unreachableURL.isEmpty() || !docLoader || docLoader->response().httpStatusCode() >= 400)
++    if (!unreachableURL.isEmpty() || docLoader->response().httpStatusCode() >= 400)
+         item->setLastVisitWasFailure(true);
+ 
+     // Save form state if this is a POST
+-    if (docLoader) {
+-        if (useOriginal)
+-            item->setFormInfoFromRequest(docLoader->originalRequest());
+-        else
+-            item->setFormInfoFromRequest(docLoader->request());
+-    }
+-    
++    item->setFormInfoFromRequest(docLoader->request());
++}
++
++PassRefPtr<HistoryItem> HistoryController::createItem()
++{
++    RefPtr<HistoryItem> item = HistoryItem::create();
++    initializeItem(item.get());
++
+     // Set the item for which we will save document state
+     m_previousItem = m_currentItem;
+     m_currentItem = item;
+@@ -493,7 +497,7 @@ PassRefPtr<HistoryItem> HistoryControlle
+ 
+ PassRefPtr<HistoryItem> HistoryController::createItemTree(Frame* targetFrame, bool clipAtTarget)
+ {
+-    RefPtr<HistoryItem> bfItem = createItem(m_frame->tree()->parent() ? true : false);
++    RefPtr<HistoryItem> bfItem = createItem();
+     if (m_previousItem)
+         saveScrollPositionAndViewStateToItem(m_previousItem.get());
+ 
+@@ -624,6 +628,31 @@ void HistoryController::updateBackForwar
+     page->backForwardList()->addItem(topItem.release());
+ }
+ 
++void HistoryController::updateCurrentItem()
++{
++    if (!m_currentItem)
++        return;
++
++    DocumentLoader* documentLoader = m_frame->loader()->documentLoader();
++
++    if (!documentLoader->unreachableURL().isEmpty())
++        return;
++
++    if (m_currentItem->url() != documentLoader->url()) {
++        // We ended up on a completely different URL this time, so the HistoryItem
++        // needs to be re-initialized.  Preserve the isTargetItem flag as it is a
++        // property of how this HistoryItem was originally created and is not
++        // dependent on the document.
++        bool isTargetItem = m_currentItem->isTargetItem();
++        m_currentItem->reset();
++        initializeItem(m_currentItem.get());
++        m_currentItem->setIsTargetItem(isTargetItem);
++    } else {
++        // Even if the final URL didn't change, the form data may have changed.
++        m_currentItem->setFormInfoFromRequest(documentLoader->request());
++    }
++}
++
+ void HistoryController::pushState(PassRefPtr<SerializedScriptValue> stateObject, const String& title, const String& urlString)
+ {
+     if (!m_currentItem)
+--- a/src/third_party/WebKit/WebCore/loader/HistoryController.h
++++ b/src/third_party/WebKit/WebCore/loader/HistoryController.h
+@@ -82,12 +82,14 @@ public:
+     void replaceState(PassRefPtr<SerializedScriptValue>, const String& title, const String& url);
+ 
+ private:
+-    PassRefPtr<HistoryItem> createItem(bool useOriginal);
++    void initializeItem(HistoryItem*);
++    PassRefPtr<HistoryItem> createItem();
+     PassRefPtr<HistoryItem> createItemTree(Frame* targetFrame, bool clipAtTarget);
+ 
+     void recursiveGoToItem(HistoryItem*, HistoryItem*, FrameLoadType);
+     bool childFramesMatchItem(HistoryItem*) const;
+     void updateBackForwardListClippedAtTarget(bool doClip);
++    void updateCurrentItem();
+ 
+     Frame* m_frame;
+ 

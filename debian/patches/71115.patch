@@ -1,0 +1,11 @@
+--- a/src/third_party/WebKit/WebCore/rendering/RenderTable.cpp
++++ b/src/third_party/WebKit/WebCore/rendering/RenderTable.cpp
+@@ -1101,6 +1101,8 @@ void RenderTable::updateFirstLetter()
+ 
+ int RenderTable::firstLineBoxBaseline() const
+ {
++    recalcSectionsIfNeeded();
++
+     RenderTableSection* firstNonEmptySection = m_head ? m_head : (m_firstBody ? m_firstBody : m_foot);
+     if (firstNonEmptySection && !firstNonEmptySection->numRows())
+         firstNonEmptySection = sectionBelow(firstNonEmptySection, true);

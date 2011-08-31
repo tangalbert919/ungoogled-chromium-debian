@@ -1,0 +1,47 @@
+--- a/src/third_party/WebKit/WebCore/page/DragController.cpp
++++ b/src/third_party/WebKit/WebCore/page/DragController.cpp
+@@ -294,6 +294,9 @@ bool DragController::tryDocumentDrag(Dra
+     if (!m_documentUnderMouse)
+         return false;
+ 
++    if (m_dragInitiator && !m_documentUnderMouse->securityOrigin()->canReceiveDragData(m_dragInitiator->securityOrigin()))
++        return false;
++
+     m_isHandlingDrag = false;
+     if (actionMask & DragDestinationActionDHTML) {
+         m_isHandlingDrag = tryDHTMLDrag(dragData, operation);
+--- a/src/third_party/WebKit/WebCore/page/SecurityOrigin.cpp
++++ b/src/third_party/WebKit/WebCore/page/SecurityOrigin.cpp
+@@ -302,6 +302,18 @@ bool SecurityOrigin::taintsCanvas(const
+     return true;
+ }
+ 
++bool SecurityOrigin::canReceiveDragData(const SecurityOrigin* dragInitiator) const
++{
++    // FIXME: Currently we treat data URLs as having a unique origin, contrary to the
++    // current (9/19/2009) draft of the HTML5 specification. We still want to allow
++    // drop across data URLs, so we special case data URLs below. If we change to
++    // match HTML5 w.r.t. data URL security, then we can remove this check.
++    if (m_protocol == "data")
++        return true;
++
++    return canAccess(dragInitiator);
++}
++
+ bool SecurityOrigin::isAccessWhiteListed(const SecurityOrigin* targetOrigin) const
+ {
+     if (OriginAccessWhiteList* list = originAccessMap().get(toString())) {
+--- a/src/third_party/WebKit/WebCore/page/SecurityOrigin.h
++++ b/src/third_party/WebKit/WebCore/page/SecurityOrigin.h
+@@ -84,6 +84,11 @@ public:
+     // Returns true if drawing an image from this URL taints a canvas from
+     // this security origin. For example, call this function before
+     // drawing an image onto an HTML canvas element with the drawImage API.
++    // Returns true if this SecurityOrigin can receive drag content from the
++    // initiator. For example, call this function before allowing content to be
++    // dropped onto a target.
++    bool canReceiveDragData(const SecurityOrigin* dragInitiator) const;
++
+     bool taintsCanvas(const KURL&) const;
+ 
+     // Returns true for any non-local URL. If document parameter is supplied,

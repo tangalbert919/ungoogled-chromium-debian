@@ -1,0 +1,86 @@
+--- a/src/chrome/browser/js_modal_dialog.cc
++++ b/src/chrome/browser/js_modal_dialog.cc
+@@ -98,45 +98,30 @@ void JavaScriptAppModalDialog::OnCancel(
+   // is a temporary workaround.
+   CompleteDialog();
+ 
+-  if (!skip_this_dialog_) {
+-    client_->OnMessageBoxClosed(reply_msg_, false, std::wstring());
+-  }
+-
+-  Cleanup();
++  UpdateDelegate(false, L"", false);
+ }
+ 
+ void JavaScriptAppModalDialog::OnAccept(const std::wstring& prompt_text,
+                                         bool suppress_js_messages) {
+   CompleteDialog();
+ 
+-  if (!skip_this_dialog_) {
+-    client_->OnMessageBoxClosed(reply_msg_, true, prompt_text);
+-    if (suppress_js_messages)
+-      client_->SetSuppressMessageBoxes(true);
+-  }
+-
+-  Cleanup();
++  UpdateDelegate(true, prompt_text, suppress_js_messages);
+ }
+ 
+ void JavaScriptAppModalDialog::OnClose() {
+-  Cleanup();
++  // Should we be handling suppress here too? See crbug.com/65008.
++  UpdateDelegate(false, L"", false);
+ }
+ 
+-void JavaScriptAppModalDialog::Cleanup() {
+-  if (skip_this_dialog_) {
+-    // We can't use the client_, because we might be in the process of
+-    // destroying it.
+-    if (tab_contents_)
+-      tab_contents_->OnMessageBoxClosed(reply_msg_, false, L"");
+-// The extension_host_ will always be a dirty pointer on OS X because the alert
+-// window will cause the extension popup to close since it is resigning its key
+-// state, destroying the host. http://crbug.com/29355
+-#if !defined(OS_MACOSX)
+-    else if (extension_host_)
+-      extension_host_->OnMessageBoxClosed(reply_msg_, false, L"");
+-    else
+-      NOTREACHED();
+-#endif
+-  }
+-  AppModalDialog::Cleanup();
++void JavaScriptAppModalDialog::UpdateDelegate(bool success,
++                                              const std::wstring& prompt_text,
++                                              bool suppress_js_messages) {
++  if (skip_this_dialog_)
++    return;
++
++  client_->OnMessageBoxClosed(reply_msg_, success, prompt_text);
++  if (suppress_js_messages)
++    client_->SetSuppressMessageBoxes(true);
++
++  skip_this_dialog_ = true;
+ }
+--- a/src/chrome/browser/js_modal_dialog.h
++++ b/src/chrome/browser/js_modal_dialog.h
+@@ -74,8 +74,6 @@ class JavaScriptAppModalDialog : public
+   void OnClose();
+ 
+  protected:
+-  // AppModalDialog overrides.
+-  virtual void Cleanup();
+   virtual NativeDialog CreateNativeDialog();
+ 
+  private:
+@@ -87,6 +85,11 @@ class JavaScriptAppModalDialog : public
+   // Initializes for notifications to listen.
+   void InitNotifications();
+ 
++  // Updates the delegate with the result of the dialog.
++  void UpdateDelegate(bool success, const std::wstring& prompt_text,
++                      bool suppress_js_messages);
++
++
+ #if defined(OS_MACOSX)
+   NSAlert* dialog_;
+ #endif

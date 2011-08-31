@@ -1,0 +1,62 @@
+--- a/src/third_party/WebKit/WebCore/rendering/RenderBlock.cpp
++++ b/src/third_party/WebKit/WebCore/rendering/RenderBlock.cpp
+@@ -125,6 +125,7 @@ RenderBlock::RenderBlock(Node* node)
+       , m_continuation(0)
+       , m_maxMargin(0)
+       , m_lineHeight(-1)
++      , m_beingDestroyed(false)
+ {
+     setChildrenInline(true);
+ }
+@@ -160,6 +161,9 @@ RenderBlock::~RenderBlock()
+ 
+ void RenderBlock::destroy()
+ {
++    // Mark as being destroyed to avoid trouble with merges in removeChild().
++    m_beingDestroyed = true;
++
+     // Make sure to destroy anonymous children first while they are still connected to the rest of the tree, so that they will
+     // properly dirty line boxes that they are removed from. Effects that do :before/:after only on hover could crash otherwise.
+     children()->destroyLeftoverChildren();
+@@ -933,8 +937,8 @@ static bool canMergeContiguousAnonymousB
+     if (oldChild->documentBeingDestroyed() || oldChild->isInline() || oldChild->virtualContinuation())
+         return false;
+ 
+-    if ((prev && (!prev->isAnonymousBlock() || toRenderBlock(prev)->continuation()))
+-        || (next && (!next->isAnonymousBlock() || toRenderBlock(next)->continuation())))
++    if ((prev && (!prev->isAnonymousBlock() || toRenderBlock(prev)->continuation() || toRenderBlock(prev)->beingDestroyed()))
++        || (next && (!next->isAnonymousBlock() || toRenderBlock(next)->continuation() || toRenderBlock(next)->beingDestroyed())))
+         return false;
+ 
+     // FIXME: This check isn't required when inline run-ins can't be split into continuations.
+@@ -1004,10 +1008,6 @@ void RenderBlock::removeChild(RenderObje
+             // Delete the now-empty block's lines and nuke it.
+             nextBlock->deleteLineBoxTree();
+             nextBlock->destroy();
+-
+-            // FIXME: Revert the continuation change done above.
+-            if (oldChildBlock)
+-                oldChildBlock->setContinuation(0);
+         }
+     }
+ 
+--- a/src/third_party/WebKit/WebCore/rendering/RenderBlock.h
++++ b/src/third_party/WebKit/WebCore/rendering/RenderBlock.h
+@@ -53,6 +53,7 @@ public:
+     RenderObjectChildList* children() { return &m_children; }
+ 
+     virtual void destroy();
++    bool beingDestroyed() const { return m_beingDestroyed; }
+ 
+     // These two functions are overridden for inline-block.
+     virtual int lineHeight(bool firstLine, bool isRootLineBox = false) const;
+@@ -574,7 +575,8 @@ private:
+     RenderObjectChildList m_children;
+     RenderLineBoxList m_lineBoxes;   // All of the root line boxes created for this block flow.  For example, <div>Hello<br>world.</div> will have two total lines for the <div>.
+ 
+-    mutable int m_lineHeight;
++    mutable int m_lineHeight : 31;
++    bool m_beingDestroyed : 1;
+ 
+     // RenderRubyBase objects need to be able to split and merge, moving their children around
+     // (calling moveChildTo, moveAllChildrenTo, and makeChildrenNonInline).

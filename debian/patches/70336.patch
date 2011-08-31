@@ -1,0 +1,158 @@
+--- a/src/third_party/WebKit/WebCore/bindings/js/WorkerScriptController.cpp
++++ b/src/third_party/WebKit/WebCore/bindings/js/WorkerScriptController.cpp
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright (C) 2008 Apple Inc. All Rights Reserved.
++ * Copyright (C) 2011 Google Inc. All Rights Reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -131,8 +132,15 @@ ScriptValue WorkerScriptController::eval
+     if (comp.complType() == Normal || comp.complType() == ReturnValue)
+         return comp.value();
+ 
+-    if (comp.complType() == Throw)
+-        *exception = comp.value();
++    if (comp.complType() == Throw) {
++        String errorMessage;
++        int lineNumber = 0;
++        String sourceURL = sourceCode.url().string();
++        if (m_workerContext->sanitizeScriptError(errorMessage, lineNumber, sourceURL))
++            *exception = ScriptValue(throwError(exec, createError(exec, errorMessage.impl())));
++        else
++            *exception = comp.value();
++    }
+     return JSValue();
+ }
+ 
+--- a/src/third_party/WebKit/WebCore/bindings/v8/WorkerContextExecutionProxy.cpp
++++ b/src/third_party/WebKit/WebCore/bindings/v8/WorkerContextExecutionProxy.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2009 Google Inc. All rights reserved.
++ * Copyright (C) 2009, 2011 Google Inc. All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are
+@@ -205,10 +205,14 @@ ScriptValue WorkerContextExecutionProxy:
+     if (exceptionCatcher.HasCaught()) {
+         v8::Local<v8::Message> message = exceptionCatcher.Message();
+         state->hadException = true;
+-        state->exception = ScriptValue(exceptionCatcher.Exception());
+         state->errorMessage = toWebCoreString(message->Get());
+         state->lineNumber = message->GetLineNumber();
+         state->sourceURL = toWebCoreString(message->GetScriptResourceName());
++        if (m_workerContext->sanitizeScriptError(state->errorMessage, state->lineNumber, state->sourceURL))
++            state->exception = V8Proxy::throwError(V8Proxy::GeneralError, state->errorMessage.utf8().data());
++        else
++            state->exception = ScriptValue(exceptionCatcher.Exception());
++
+         exceptionCatcher.Reset();
+     } else
+         state->hadException = false;
+--- a/src/third_party/WebKit/WebCore/dom/ScriptExecutionContext.cpp
++++ b/src/third_party/WebKit/WebCore/dom/ScriptExecutionContext.cpp
+@@ -225,6 +225,17 @@ void ScriptExecutionContext::setSecurity
+     m_securityOrigin = securityOrigin;
+ }
+ 
++bool ScriptExecutionContext::sanitizeScriptError(String& errorMessage, int& lineNumber, String& sourceURL)
++{
++    KURL targetURL = completeURL(sourceURL);
++    if (securityOrigin()->canRequest(targetURL))
++        return false;
++    errorMessage = "Script error.";
++    sourceURL = String();
++    lineNumber = 0;
++    return true;
++}
++
+ void ScriptExecutionContext::addTimeout(int timeoutId, DOMTimer* timer)
+ {
+     ASSERT(!m_timeouts.contains(timeoutId));
+--- a/src/third_party/WebKit/WebCore/dom/ScriptExecutionContext.h
++++ b/src/third_party/WebKit/WebCore/dom/ScriptExecutionContext.h
+@@ -91,6 +91,7 @@ namespace WebCore {
+         
+         // Active objects are not garbage collected even if inaccessible, e.g. because their activity may result in callbacks being invoked.
+         bool canSuspendActiveDOMObjects();
++        bool sanitizeScriptError(String& errorMessage, int& lineNumber, String& sourceURL);
+         // Active objects can be asked to suspend even if canSuspendActiveDOMObjects() returns 'false' -
+         // step-by-step JS debugging is one example.
+         void suspendActiveDOMObjects();
+--- a/src/third_party/WebKit/WebCore/workers/WorkerContext.cpp
++++ b/src/third_party/WebKit/WebCore/workers/WorkerContext.cpp
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (C) 2008 Apple Inc. All Rights Reserved.
+- * Copyright (C) 2009 Google Inc. All Rights Reserved.
++ * Copyright (C) 2009, 2011 Google Inc. All Rights Reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -233,7 +233,7 @@ void WorkerContext::importScripts(const
+ #endif
+ 
+         ScriptValue exception;
+-        m_script->evaluate(ScriptSourceCode(scriptLoader.script(), *it), &exception);
++        m_script->evaluate(ScriptSourceCode(scriptLoader.script(), scriptLoader.responseURL()), &exception);
+         if (!exception.hasNoValue()) {
+             m_script->setException(exception);
+             return;
+--- a/src/third_party/WebKit/WebCore/workers/WorkerScriptLoader.cpp
++++ b/src/third_party/WebKit/WebCore/workers/WorkerScriptLoader.cpp
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+- * Copyright (C) 2009 Google Inc. All Rights Reserved.
++ * Copyright (C) 2009, 2011 Google Inc. All Rights Reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -87,6 +87,12 @@ void WorkerScriptLoader::loadAsynchronou
+     m_threadableLoader = ThreadableLoader::create(scriptExecutionContext, this, *request, options);
+ }
+ 
++const KURL& WorkerScriptLoader::responseURL() const
++{
++    ASSERT(!failed());
++    return m_responseURL;
++}
++
+ PassOwnPtr<ResourceRequest> WorkerScriptLoader::createResourceRequest()
+ {
+     OwnPtr<ResourceRequest> request(new ResourceRequest(m_url));
+@@ -101,6 +107,7 @@ void WorkerScriptLoader::didReceiveRespo
+         m_failed = true;
+         return;
+     }
++    m_responseURL = response.url();
+     m_responseEncoding = response.textEncodingName();
+     if (m_client)
+         m_client->didReceiveResponse(response);
+--- a/src/third_party/WebKit/WebCore/workers/WorkerScriptLoader.h
++++ b/src/third_party/WebKit/WebCore/workers/WorkerScriptLoader.h
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+- * Copyright (C) 2009 Google Inc. All Rights Reserved.
++ * Copyright (C) 2009, 2011 Google Inc. All Rights Reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -54,6 +54,7 @@ namespace WebCore {
+ 
+         const String& script() const { return m_script; }
+         const KURL& url() const { return m_url; }
++        const KURL& responseURL() const;
+         bool failed() const { return m_failed; }
+         unsigned long identifier() const { return m_identifier; }
+ 
+@@ -74,6 +75,7 @@ namespace WebCore {
+         RefPtr<TextResourceDecoder> m_decoder;
+         String m_script;
+         KURL m_url;
++        KURL m_responseURL;
+         bool m_failed;
+         unsigned long m_identifier;
+         ResourceRequestBase::TargetType m_targetType;

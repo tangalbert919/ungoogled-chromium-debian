@@ -1,0 +1,14 @@
+--- a/src/chrome/browser/extensions/sandboxed_extension_unpacker.cc
++++ b/src/chrome/browser/extensions/sandboxed_extension_unpacker.cc
+@@ -200,6 +200,11 @@ bool SandboxedExtensionUnpacker::Validat
+     return false;
+   }
+ 
++  if (header.signature_size == 0) {
++    ReportFailure("Signature length is zero");
++    return false;
++  }
++
+   std::vector<uint8> key;
+   key.resize(header.key_size);
+   len = fread(&key.front(), sizeof(uint8), header.key_size, file.get());
