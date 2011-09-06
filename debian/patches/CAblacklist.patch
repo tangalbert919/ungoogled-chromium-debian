@@ -1,0 +1,222 @@
+--- a/src/net/base/x509_certificate.cc
++++ b/src/net/base/x509_certificate.cc
+@@ -248,4 +248,34 @@ bool X509Certificate::HasIntermediateCer
+   return true;
+ }
+ 
++bool X509Certificate::IsBlacklisted() const {
++  static const unsigned kNumSerials = 8;
++  static const unsigned kSerialBytes = 16;
++  static const uint8 kSerials[kNumSerials][kSerialBytes] = {
++    // Not a real certificate. For testing only.
++    {0x07,0x7a,0x59,0xbc,0xd5,0x34,0x59,0x60,0x1c,0xa6,0x90,0x72,0x67,0xa6,0xdd,0x1c},
++
++    {0x04,0x7e,0xcb,0xe9,0xfc,0xa5,0x5f,0x7b,0xd0,0x9e,0xae,0x36,0xe1,0x0c,0xae,0x1e},
++    {0xd8,0xf3,0x5f,0x4e,0xb7,0x87,0x2b,0x2d,0xab,0x06,0x92,0xe3,0x15,0x38,0x2f,0xb0},
++    {0xb0,0xb7,0x13,0x3e,0xd0,0x96,0xf9,0xb5,0x6f,0xae,0x91,0xc8,0x74,0xbd,0x3a,0xc0},
++    {0x92,0x39,0xd5,0x34,0x8f,0x40,0xd1,0x69,0x5a,0x74,0x54,0x70,0xe1,0xf2,0x3f,0x43},
++    {0x92,0x39,0xd5,0x34,0x8f,0x40,0xd1,0x69,0x5a,0x74,0x54,0x70,0xe1,0xf2,0x3f,0x43},
++    {0xd7,0x55,0x8f,0xda,0xf5,0xf1,0x10,0x5b,0xb2,0x13,0x28,0x2b,0x70,0x77,0x29,0xa3},
++    {0xf5,0xc8,0x6a,0xf3,0x61,0x62,0xf1,0x3a,0x64,0xf5,0x4f,0x6d,0xc9,0x58,0x7c,0x06},
++  };
++
++  if (serial_number_.size() == kSerialBytes) {
++    for (unsigned i = 0; i < kNumSerials; i++) {
++      if (memcmp(kSerials[i], serial_number_.data(), kSerialBytes) == 0) {
++        UMA_HISTOGRAM_CUSTOM_COUNTS(
++            "Net.SSLCertBlacklisted", i /* sample */, 0 /* min */,
++            99 /* max */, 100 /* num buckets */);
++        return true;
++      }
++    }
++  }
++
++  return false;
++}
++
+ }  // namespace net
+--- a/src/net/base/x509_certificate.h
++++ b/src/net/base/x509_certificate.h
+@@ -126,6 +126,9 @@ class X509Certificate : public base::Ref
+   // The fingerprint of this certificate.
+   const SHA1Fingerprint& fingerprint() const { return fingerprint_; }
+ 
++  // The serial number, DER encoded.
++  const std::string& serial_number() const { return serial_number_; }
++
+   // Gets the DNS names in the certificate.  Pursuant to RFC 2818, Section 3.1
+   // Server Identity, if the certificate has a subjectAltName extension of
+   // type dNSName, this method gets the DNS names in that extension.
+@@ -232,6 +235,9 @@ class X509Certificate : public base::Ref
+   // (all zero) fingerprint on failure.
+   static SHA1Fingerprint CalculateFingerprint(OSCertHandle cert_handle);
+ 
++  // IsBlacklisted returns true if this certificate is explicitly blacklisted.
++  bool IsBlacklisted() const;
++
+   // The subject of the certificate.
+   CertPrincipal subject_;
+ 
+@@ -247,6 +253,9 @@ class X509Certificate : public base::Ref
+   // The fingerprint of this certificate.
+   SHA1Fingerprint fingerprint_;
+ 
++  // The serial number of this certificate, DER encoded.
++  std::string serial_number_;
++
+   // A handle to the certificate object in the underlying crypto library.
+   OSCertHandle cert_handle_;
+ 
+--- a/src/net/base/x509_certificate_mac.cc
++++ b/src/net/base/x509_certificate_mac.cc
+@@ -295,6 +295,32 @@ void GetCertDateForOID(X509Certificate::
+   }
+ }
+ 
++std::string GetCertSerialNumber(X509Certificate::OSCertHandle cert_handle) {
++  CSSMFields fields;
++  OSStatus status = GetCertFields(cert_handle, &fields);
++  if (status)
++    return "";
++
++  std::string ret;
++  for (size_t field = 0; field < fields.num_of_fields; ++field) {
++    if (!CSSMOIDEqual(&fields.fields[field].FieldOid,
++                      &CSSMOID_X509V1SerialNumber)) {
++      continue;
++    }
++    ret.assign(
++        reinterpret_cast<char*>(fields.fields[field].FieldValue.Data),
++        fields.fields[field].FieldValue.Length);
++    break;
++  }
++
++  // Remove leading zeros.
++  while (ret.size() > 1 && ret[0] == 0)
++    ret = ret.substr(1, ret.size() - 1);
++
++  return ret;
++}
++
++
+ // Creates a SecPolicyRef for the given OID, with optional value.
+ OSStatus CreatePolicy(const CSSM_OID* policy_OID,
+                       void* option_data,
+@@ -391,6 +417,7 @@ void X509Certificate::Initialize() {
+                     &valid_expiry_);
+ 
+   fingerprint_ = CalculateFingerprint(cert_handle_);
++  serial_number_ = GetCertSerialNumber(cert_handle_);
+ }
+ 
+ // static
+@@ -429,6 +456,12 @@ int X509Certificate::Verify(const std::s
+                             CertVerifyResult* verify_result) const {
+   verify_result->Reset();
+ 
++  if (IsBlacklisted()) {
++    verify_result->cert_status |= CERT_STATUS_REVOKED;
++    return ERR_CERT_REVOKED;
++  }
++
++
+   // Create an SSL SecPolicyRef, and configure it to perform hostname
+   // validation. The hostname check does 99% of what we want, with the
+   // exception of dotted IPv4 addreses, which we handle ourselves below.
+--- a/src/net/base/x509_certificate_nss.cc
++++ b/src/net/base/x509_certificate_nss.cc
+@@ -581,6 +581,13 @@ void X509Certificate::Initialize() {
+   ParseDate(&cert_handle_->validity.notAfter, &valid_expiry_);
+ 
+   fingerprint_ = CalculateFingerprint(cert_handle_);
++
++  serial_number_ = std::string(
++      reinterpret_cast<char*>(cert_handle_->serialNumber.data),
++      cert_handle_->serialNumber.len);
++  // Remove leading zeros.
++  while (serial_number_.size() > 1 && serial_number_[0] == 0)
++    serial_number_ = serial_number_.substr(1, serial_number_.size() - 1);
+ }
+ 
+ // static
+@@ -618,6 +625,11 @@ int X509Certificate::Verify(const std::s
+                             CertVerifyResult* verify_result) const {
+   verify_result->Reset();
+ 
++  if (IsBlacklisted()) {
++    verify_result->cert_status |= CERT_STATUS_REVOKED;
++    return ERR_CERT_REVOKED;
++  }
++
+   // Make sure that the hostname matches with the common name of the cert.
+   SECStatus status = CERT_VerifyCertName(cert_handle_, hostname.c_str());
+   if (status != SECSuccess)
+--- a/src/net/base/x509_certificate_unittest.cc
++++ b/src/net/base/x509_certificate_unittest.cc
+@@ -322,6 +322,35 @@ TEST(X509CertificateTest, UnoSoftCertPar
+   EXPECT_NE(0, verify_result.cert_status & CERT_STATUS_AUTHORITY_INVALID);
+ }
+ 
++TEST(X509CertificateTest, SerialNumbers) {
++  scoped_refptr<X509Certificate> google_cert(
++      X509Certificate::CreateFromBytes(
++          reinterpret_cast<const char*>(google_der), sizeof(google_der)));
++
++  static const uint8 google_serial[16] = {
++    0x01,0x2a,0x39,0x76,0x0d,0x3f,0x4f,0xc9,
++    0x0b,0xe7,0xbd,0x2b,0xcf,0x95,0x2e,0x7a,
++  };
++
++  ASSERT_EQ(sizeof(google_serial), google_cert->serial_number().size());
++  EXPECT_TRUE(memcmp(google_cert->serial_number().data(), google_serial,
++                     sizeof(google_serial)) == 0);
++
++  // We also want to check a serial number where the first byte is >= 0x80 in
++  // case the underlying library tries to pad it.
++  scoped_refptr<X509Certificate> paypal_null_cert(
++      X509Certificate::CreateFromBytes(
++          reinterpret_cast<const char*>(paypal_null_der),
++          sizeof(paypal_null_der)));
++
++  static const uint8 paypal_null_serial[2] = {0xf0, 0x9b};
++  ASSERT_EQ(sizeof(paypal_null_serial),
++            paypal_null_cert->serial_number().size());
++  EXPECT_TRUE(memcmp(paypal_null_cert->serial_number().data(),
++                     paypal_null_serial, sizeof(paypal_null_serial)) == 0);
++}
++
++
+ #if defined(USE_NSS)
+ // A regression test for http://crbug.com/31497.
+ // This certificate will expire on 2012-04-08.
+--- a/src/net/base/x509_certificate_win.cc
++++ b/src/net/base/x509_certificate_win.cc
+@@ -464,6 +464,16 @@ void X509Certificate::Initialize() {
+   valid_expiry_ = Time::FromFileTime(cert_handle_->pCertInfo->NotAfter);
+ 
+   fingerprint_ = CalculateFingerprint(cert_handle_);
++
++  const CRYPT_INTEGER_BLOB* serial = &cert_handle_->pCertInfo->SerialNumber;
++  scoped_array<uint8> serial_bytes(new uint8[serial->cbData]);
++  for (unsigned i = 0; i < serial->cbData; i++)
++    serial_bytes[i] = serial->pbData[serial->cbData - i - 1];
++  serial_number_ = std::string(
++      reinterpret_cast<char*>(serial_bytes.get()), serial->cbData);
++  // Remove leading zeros.
++  while (serial_number_.size() > 1 && serial_number_[0] == 0)
++    serial_number_ = serial_number_.substr(1, serial_number_.size() - 1);
+ }
+ 
+ // static
+@@ -534,6 +544,11 @@ int X509Certificate::Verify(const std::s
+   if (!cert_handle_)
+     return ERR_UNEXPECTED;
+ 
++  if (IsBlacklisted()) {
++    verify_result->cert_status |= CERT_STATUS_REVOKED;
++    return ERR_CERT_REVOKED;
++  }
++
+   // Build and validate certificate chain.
+ 
+   CERT_CHAIN_PARA chain_para;
