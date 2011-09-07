@@ -22,7 +22,35 @@
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
  
-@@ -249,32 +249,357 @@ bool X509Certificate::HasIntermediateCer
+@@ -10,11 +10,14 @@
+ #include <cert.h>
+ #endif
+ 
++#include <stdlib.h>
++
+ #include <map>
+ 
+ #include "base/histogram.h"
+ #include "base/logging.h"
+ #include "base/singleton.h"
++#include "base/sha1.h"
+ #include "base/time.h"
+ 
+ namespace net {
+@@ -31,6 +34,12 @@ bool IsNullFingerprint(const SHA1Fingerp
+   return true;
+ }
+ 
++// CompareSHA1Hashes is a helper function for using bsearch() with an array of
++// SHA1 hashes.
++static int CompareSHA1Hashes(const void* a, const void* b) {
++  return memcmp(a, b, base::SHA1_LENGTH);
++}
++
+ }  // namespace
+ 
+ // static
+@@ -249,33 +258,368 @@ bool X509Certificate::HasIntermediateCer
  }
  
  bool X509Certificate::IsBlacklisted() const {
@@ -385,6 +413,17 @@
    return false;
  }
  
++// static
++bool X509Certificate::IsSHA1HashInSortedArray(const SHA1Fingerprint& hash,
++                                              const uint8* array,
++                                              size_t array_byte_len) {
++  DCHECK_EQ(0u, array_byte_len % base::SHA1_LENGTH);
++  const unsigned arraylen = array_byte_len / base::SHA1_LENGTH;
++  return NULL != bsearch(hash.data, array, arraylen, base::SHA1_LENGTH,
++                         CompareSHA1Hashes);
++}
++
+ }  // namespace net
 --- a/src/net/base/x509_certificate.h
 +++ b/src/net/base/x509_certificate.h
 @@ -126,8 +126,6 @@ class X509Certificate : public base::Ref
@@ -396,7 +435,7 @@
  
    // Gets the DNS names in the certificate.  Pursuant to RFC 2818, Section 3.1
    // Server Identity, if the certificate has a subjectAltName extension of
-@@ -235,9 +233,23 @@ class X509Certificate : public base::Ref
+@@ -235,9 +233,29 @@ class X509Certificate : public base::Ref
    // (all zero) fingerprint on failure.
    static SHA1Fingerprint CalculateFingerprint(OSCertHandle cert_handle);
  
@@ -417,13 +456,59 @@
 +      const std::vector<SHA1Fingerprint>& public_key_hashes);
 +
 +
++  // IsSHA1HashInSortedArray returns true iff |hash| is in |array|, a sorted
++  // array of SHA1 hashes.
++  static bool IsSHA1HashInSortedArray(const SHA1Fingerprint& hash,
++                                      const uint8* array,
++                                      size_t array_byte_len);
++
    // The subject of the certificate.
    CertPrincipal subject_;
  
 --- a/src/net/base/x509_certificate_nss.cc
 +++ b/src/net/base/x509_certificate_nss.cc
-@@ -684,6 +684,12 @@ int X509Certificate::Verify(const std::s
+@@ -216,6 +216,18 @@ void GetCertChainInfo(CERTCertList* cert
+   }
+ }
  
++// IsBuiltinRoot returns true if the given certificate is one that we believe
++// is a standard (as opposed to user-installed) root.
++bool IsBuiltinRoot(CERTCertificate* root) {
++  if (!root->slot)
++    return true;
++
++  // This magic name is taken from
++  // http://bonsai.mozilla.org/cvsblame.cgi?file=mozilla/security/nss/lib/ckfw/builtins/constants.c&rev=1.13&mark=86,89#79
++  return 0 == strcmp(PK11_GetSlotName(root->slot),
++                     "NSS Builtin Objects");
++}
++
+ typedef char* (*CERTGetNameFunc)(CERTName* name);
+ 
+ void ParsePrincipal(CERTName* name,
+@@ -643,11 +655,14 @@ int X509Certificate::Verify(const std::s
+ 
+   CERTValOutParam cvout[3];
+   int cvout_index = 0;
+-  // We don't need the trust anchor for the first PKIXVerifyCert call.
+   cvout[cvout_index].type = cert_po_certList;
+   cvout[cvout_index].value.pointer.chain = NULL;
+   int cvout_cert_list_index = cvout_index;
+   cvout_index++;
++  cvout[cvout_index].type = cert_po_trustAnchor;
++  cvout[cvout_index].value.pointer.cert = NULL;
++  int cvout_trust_anchor_index = cvout_index;
++  cvout_index++;
+   cvout[cvout_index].type = cert_po_end;
+   ScopedCERTValOutParam scoped_cvout(cvout);
+ 
+@@ -682,8 +697,17 @@ int X509Certificate::Verify(const std::s
+   if (IsCertStatusError(verify_result->cert_status))
+     return MapCertStatusToNetError(verify_result->cert_status);
+ 
++  verify_result->is_issued_by_known_root =
++      IsBuiltinRoot(cvout[cvout_trust_anchor_index].value.pointer.cert);
++
    if ((flags & VERIFY_EV_CERT) && VerifyEV())
      verify_result->cert_status |= CERT_STATUS_IS_EV;
 +
@@ -435,3 +520,53 @@
    return OK;
  }
  
+--- a/src/net/base/cert_verify_result.h
++++ b/src/net/base/cert_verify_result.h
+@@ -1,4 +1,4 @@
+-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
++// Copyright (c) 2011 The Chromium Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+@@ -20,6 +20,7 @@ class CertVerifyResult {
+     has_md4 = false;
+     has_md5_ca = false;
+     has_md2_ca = false;
++    is_issued_by_known_root = false;
+   }
+ 
+   int cert_status;
+@@ -30,6 +31,12 @@ class CertVerifyResult {
+   bool has_md4;
+   bool has_md5_ca;
+   bool has_md2_ca;
++
++  // is_issued_by_known_root is true if recognise the root CA as a standard
++  // root.  If it isn't then it's probably the case that this certificate was
++  // generated by a MITM proxy whose root has been installed locally. This is
++  // meaningless if the certificate was not trusted.
++  bool is_issued_by_known_root;
+ };
+ 
+ }  // namespace net
+--- a/src/net/base/x509_certificate_unittest.cc
++++ b/src/net/base/x509_certificate_unittest.cc
+@@ -604,4 +604,18 @@ TEST(X509CertificateTest, IsIssuedBy) {
+ }
+ #endif  // defined(OS_MACOSX)
+ 
++TEST(X509CertificateTest, TestKnownRoot) {
++  FilePath certs_dir = GetTestCertsDirectory();
++  scoped_refptr<X509Certificate> cert =
++      ImportCertFromFile(certs_dir, "nist.der");
++  ASSERT_NE(static_cast<X509Certificate*>(NULL), cert);
++
++  int flags = 0;
++  CertVerifyResult verify_result;
++  cert->Verify("www.nist.gov", flags, &verify_result);
++  // We don't check the error because the certificate will expire eventually.
++  EXPECT_TRUE(verify_result.is_issued_by_known_root);
++}
++
++
+ }  // namespace net
