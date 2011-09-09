@@ -1,19 +1,16 @@
-chromium-browser (6.0.472.63~r59945-5+squeeze6) UNRELEASED; urgency=low
+chromium-browser (6.0.472.63~r59945-5+squeeze6) stable-security; urgency=low
 
   * Added gbp.conf
-  * Fixed CVE-2011-2824: Use-after-free with counter nodes.
-    Credit to miaubiz.
   * Fixed CVE-2011-2818: Use-after-free in display box rendering.
     Credit to Martin Barbella.
   * Fixed CVE-2011-2800: Leak of client-side redirect target.
     Credit to Juho Nurminen
-  * Fixed CVE-2011-2795: Cross-frame function leak. Credit to Shih Wei-Long.
   * FIxed CVE-2011-2359: Stale pointer due to bad line box tracking in
     rendering. Credit to miaubiz and Martin Barbella.
   * Blacklist SSL certificates issued by DigiNotar-controlled intermediate CAs
     used by the Dutch PKIoverheid program
 
- -- Giuseppe Iuculano <iuculano@debian.org>  Tue, 06 Sep 2011 17:17:49 +0200
+ -- Giuseppe Iuculano <iuculano@debian.org>  Fri, 09 Sep 2011 22:05:07 +0200
 
 chromium-browser (6.0.472.63~r59945-5+squeeze5) stable-security; urgency=low
 
