@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-DEBIAN_NAME		:= chromium
+DEBIAN_NAME		:= chromium-browser
 DEBIAN_VERSION		:= $(shell dpkg-parsechangelog | sed -n 's/^Version: *\(.*\)$$/\1/ p')
 DEBIAN_UPSTREAM_VERSION	:= $(shell echo $(DEBIAN_VERSION) | sed 's/^\(.*\)-[^-]*$$/\1/')
 DEBIAN_REVISION		:= $(shell echo $(DEBIAN_VERSION) | sed 's/^.*r\([^-]*\)-.*/\1/')
@@ -8,7 +8,7 @@ DEBIAN_DIST		:= $(shell lsb_release -ds | tr -d '()')
 DEBIAN_DIST_NAME	:= $(shell lsb_release -si)
 DEBIAN_DIST_VERSION	:= $(shell lsb_release -sr)
 MULTIARCH		:= $(shell dpkg-architecture -qDEB_BUILD_MULTIARCH)
-USE_SYSTEM_FFMPEG	:= 1
+USE_SYSTEM_FFMPEG	:= 0
 ifeq (1,$(USE_SYSTEM_FFMPEG))
 LIBAVCODEC_BASENAME	:= $(shell basename $$(ls -x /usr/lib/$(MULTIARCH)/libavcodec.so.* | cut -d ' ' -f 1))
 LIBAVFORMAT_BASENAME	:= $(shell basename $$(ls -x /usr/lib/$(MULTIARCH)/libavformat.so.* | cut -d ' ' -f 1))
@@ -33,7 +33,7 @@ WANT_SYSTEM_LIBS ?= 1
 WANT_SHARED_LIBS ?= 0
 WANT_TESTS       ?= 0
 WANT_SANDBOXING  ?= 1
-USE_SYSTEM_V8    ?= 1
+USE_SYSTEM_V8    ?= 0
 VERBOSE          ?= 0
 
 export DEB_BUILD_HARDENING=1
@@ -297,13 +297,13 @@ GYP_DEFINES += \
 	use_system_libxslt=1 \
 	use_system_zlib=1 \
 	use_system_libevent=1 \
-	use_system_icu=1 \
+	use_system_icu=0 \
 	use_system_yasm=1 \
 	use_system_ffmpeg=$(USE_SYSTEM_FFMPEG) \
-	use_system_vpx=1 \
+	use_system_vpx=0 \
 	use_system_xdg_utils=1 \
 	use_system_flac=1 \
-	use_system_libwebp=1 \
+	use_system_libwebp=0 \
 	use_system_speex=1 \
 	$(NULL)
 endif
@@ -373,10 +373,15 @@ subst_files = \
 	debian/$(DEBIAN_NAME).sh \
 	$(NULL)
 
-%:: %.in
+debian/chromium-browser.sh:: debian/chromium.sh.in
+	for file in debian/chromium*; do \
+	    fnew=$$(echo $$file | sed s/chromium/chromium-browser/g); \
+	    sed s/chromium/chromium-browser/g < $$file > $$fnew; \
+	    done
 	sed -e 's/@BUILD_DIST@/$(DEBIAN_DIST_NAME) $(DEBIAN_DIST_VERSION)/g' \
 	    -e 's/@BUILD_DIST_NAME@/$(DEBIAN_DIST_NAME)/g' \
 	    -e 's/@BUILD_DIST_VERSION)@/$(DEBIAN_DIST_VERSION)/g' \
+	    -e 's/chromium/chromium-browser/g' \
 	    < $< > $@
 
 pre-build:: $(subst_files)
@@ -424,6 +429,7 @@ clean::
 	find src -name *.pyc -execdir rm -f {} \;
 	find src -name *.mk -execdir rm -f {} \;
 	find src -name *.Makefile -execdir rm -f {} \;
+	find debian -name chromium-browse* -execdir rm -f {} \;
 	rm -f src/build/LASTCHANGE.in
 	rm -f src/third_party/WebKit/Source/WebCore/WebCore.gyp/idls_list_temp_file.tmp
 	rm -f src/v8/tools/gyp/v8.log

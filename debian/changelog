@@ -1,3 +1,14 @@
+chromium-browser (14.0.835.202~r103287-1~bpo60+1) squeeze-backports; urgency=low
+
+  * Rebuild for squeeze-backports.
+  * Drop cups 1.5 support patch.
+  * Don't use experimental gold linker.
+  * Use chromium-browser naming to adhere to squeeze scheme.
+  * Use embedded libwebp, libvpx, icu, v8, and ffmpeg libraries.
+  * Use "--single-process" argument by default.
+
+ -- Michael Gilbert <michael.s.gilbert@gmail.com>  Wed, 21 Sep 2011 21:16:29 -0400
+
 chromium-browser (14.0.835.202~r103287-1) unstable; urgency=low
 
   [ Michael Gilbert ]
