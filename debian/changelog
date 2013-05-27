@@ -1,4 +1,4 @@
-chromium-browser (27.0.1453.93-1) unstable; urgency=low
+chromium-browser (27.0.1453.93-1~deb7u1) stable-security; urgency=high
 
   * New stable release:
     - High CVE-2013-2837: Use-after-free in SVG. Credit to Sławomir Błażek.
