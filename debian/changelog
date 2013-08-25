@@ -1,3 +1,21 @@
+chromium-browser (29.0.1547.57-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - High CVE-2013-2900: Incomplete path sanitization in file handling.
+      Credit to Krystian Bigaj.
+    - Low CVE-2013-2905: Information leak via overly broad permissions on
+      shared memory files. Credit to Christian Jaeger.
+    - High CVE-2013-2901: Integer overflow in ANGLE. Credit to Alex Chapman.
+    - High CVE-2013-2902: Use after free in XSLT. Credit to cloudfuzzer.
+    - High CVE-2013-2903: Use after free in media element. Credit to
+      cloudfuzzer.
+    - High CVE-2013-2904: Use after free in document parsing. Credit to
+      cloudfuzzer.
+    - CVE-2013-2887: Various fixes from internal audits, fuzzing and other
+      initiatives (Chrome 29).
+
+ -- Michael Gilbert <mgilbert@debian.org>  Sun, 25 Aug 2013 00:13:29 +0000
+
 chromium-browser (28.0.1500.95-1~deb7u1) stable-security; urgency=high
 
   * New upstream stable release:
