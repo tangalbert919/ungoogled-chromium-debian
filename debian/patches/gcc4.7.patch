@@ -1,19 +1,19 @@
-Index: sid/src/chrome/browser/search_engines/template_url_prepopulate_data.h
+Index: chromium/src/chrome/browser/search_engines/template_url_prepopulate_data.h
 ===================================================================
---- sid.orig/src/chrome/browser/search_engines/template_url_prepopulate_data.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/chrome/browser/search_engines/template_url_prepopulate_data.h	2013-06-24 11:50:52.936040746 +0200
+--- chromium.orig/src/chrome/browser/search_engines/template_url_prepopulate_data.h	2013-08-25 00:40:18.157232879 +0000
++++ chromium/src/chrome/browser/search_engines/template_url_prepopulate_data.h	2013-08-25 01:18:50.073148406 +0000
 @@ -8,6 +8,7 @@
  #include <stddef.h>
  #include <string>
  #include <vector>
 +#include <cstddef>
  
- #include "base/string16.h"
+ #include "base/strings/string16.h"
  #include "chrome/browser/search_engines/search_engine_type.h"
-Index: sid/src/gpu/command_buffer/common/types.h
+Index: chromium/src/gpu/command_buffer/common/types.h
 ===================================================================
---- sid.orig/src/gpu/command_buffer/common/types.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/gpu/command_buffer/common/types.h	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/gpu/command_buffer/common/types.h	2013-08-25 00:40:38.053232152 +0000
++++ chromium/src/gpu/command_buffer/common/types.h	2013-08-25 01:18:50.077148406 +0000
 @@ -12,6 +12,7 @@
  #endif
  #include <cstddef>
@@ -22,19 +22,19 @@ Index: sid/src/gpu/command_buffer/common/types.h
  
  typedef signed char         schar;
  typedef signed char         int8;
-Index: sid/src/ipc/ipc_channel.h
+Index: chromium/src/ipc/ipc_channel.h
 ===================================================================
---- sid.orig/src/ipc/ipc_channel.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/ipc/ipc_channel.h	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/ipc/ipc_channel.h	2013-08-25 00:41:29.573230269 +0000
++++ chromium/src/ipc/ipc_channel.h	2013-08-25 01:18:50.077148406 +0000
 @@ -1,3 +1,4 @@
 +#include <sys/types.h>
  // Copyright (c) 2012 The Chromium Authors. All rights reserved.
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
-Index: sid/src/third_party/ots/src/os2.cc
+Index: chromium/src/third_party/ots/src/os2.cc
 ===================================================================
---- sid.orig/src/third_party/ots/src/os2.cc	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/third_party/ots/src/os2.cc	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/third_party/ots/src/os2.cc	2013-08-25 00:41:08.129231053 +0000
++++ chromium/src/third_party/ots/src/os2.cc	2013-08-25 01:18:50.085148406 +0000
 @@ -5,6 +5,7 @@
  #include "os2.h"
  
@@ -43,10 +43,10 @@ Index: sid/src/third_party/ots/src/os2.cc
  
  // OS/2 - OS/2 and Windows Metrics
  // http://www.microsoft.com/opentype/otspec/os2.htm
-Index: sid/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h
+Index: chromium/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h
 ===================================================================
---- sid.orig/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h	2013-08-25 00:40:40.973232045 +0000
++++ chromium/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h	2013-08-25 01:18:50.097148405 +0000
 @@ -39,6 +39,7 @@
  
  #include <stddef.h>   // for ptrdiff_t
@@ -55,10 +55,10 @@ Index: sid/src/third_party/tcmalloc/chromium/src/base/stl_allocator.h
  
  #include "base/logging.h"
  
-Index: sid/src/third_party/tcmalloc/chromium/src/base/vdso_support.h
+Index: chromium/src/third_party/tcmalloc/chromium/src/base/vdso_support.h
 ===================================================================
---- sid.orig/src/third_party/tcmalloc/chromium/src/base/vdso_support.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/third_party/tcmalloc/chromium/src/base/vdso_support.h	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/third_party/tcmalloc/chromium/src/base/vdso_support.h	2013-08-25 00:40:40.973232045 +0000
++++ chromium/src/third_party/tcmalloc/chromium/src/base/vdso_support.h	2013-08-25 01:18:50.097148405 +0000
 @@ -63,6 +63,7 @@
  
  #define HAVE_VDSO_SUPPORT 1
@@ -67,10 +67,10 @@ Index: sid/src/third_party/tcmalloc/chromium/src/base/vdso_support.h
  #include <stdlib.h>     // for NULL
  
  namespace base {
-Index: sid/src/third_party/tcmalloc/chromium/src/common.cc
+Index: chromium/src/third_party/tcmalloc/chromium/src/common.cc
 ===================================================================
---- sid.orig/src/third_party/tcmalloc/chromium/src/common.cc	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/third_party/tcmalloc/chromium/src/common.cc	2013-06-24 11:50:52.940040746 +0200
+--- chromium.orig/src/third_party/tcmalloc/chromium/src/common.cc	2013-08-25 00:40:40.913232047 +0000
++++ chromium/src/third_party/tcmalloc/chromium/src/common.cc	2013-08-25 01:18:50.101148405 +0000
 @@ -33,6 +33,7 @@
  #include "config.h"
  #include "common.h"
@@ -79,10 +79,10 @@ Index: sid/src/third_party/tcmalloc/chromium/src/common.cc
  
  #if defined(HAVE_UNISTD_H) && defined(HAVE_GETPAGESIZE)
  #include <unistd.h>                     // for getpagesize
-Index: sid/src/third_party/tcmalloc/chromium/src/symbolize.h
+Index: chromium/src/third_party/tcmalloc/chromium/src/symbolize.h
 ===================================================================
---- sid.orig/src/third_party/tcmalloc/chromium/src/symbolize.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/third_party/tcmalloc/chromium/src/symbolize.h	2013-06-24 11:50:52.944040747 +0200
+--- chromium.orig/src/third_party/tcmalloc/chromium/src/symbolize.h	2013-08-25 00:40:40.933232047 +0000
++++ chromium/src/third_party/tcmalloc/chromium/src/symbolize.h	2013-08-25 01:18:50.105148405 +0000
 @@ -39,6 +39,7 @@
  #endif
  #include <stddef.h>  // for NULL
@@ -91,10 +91,10 @@ Index: sid/src/third_party/tcmalloc/chromium/src/symbolize.h
  
  using std::map;
  
-Index: sid/src/ui/gfx/codec/jpeg_codec.h
+Index: chromium/src/ui/gfx/codec/jpeg_codec.h
 ===================================================================
---- sid.orig/src/ui/gfx/codec/jpeg_codec.h	2013-06-24 11:50:52.948040747 +0200
-+++ sid/src/ui/gfx/codec/jpeg_codec.h	2013-06-24 11:50:52.944040747 +0200
+--- chromium.orig/src/ui/gfx/codec/jpeg_codec.h	2013-08-25 00:40:37.317232179 +0000
++++ chromium/src/ui/gfx/codec/jpeg_codec.h	2013-08-25 01:18:50.109148405 +0000
 @@ -7,6 +7,7 @@
  
  #include <stddef.h>
