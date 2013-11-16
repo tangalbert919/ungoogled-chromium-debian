@@ -3,7 +3,6 @@ nspr.patch
 nss.patch
 expat.patch
 prefs.patch
-armv4.patch
 #ffmpeg_arm.patch
 system-speech.patch
 #glew.patch
@@ -18,6 +17,4 @@ cups1.5.patch
 #system_v8.patch
 #protobuf.patch
 gcc4.7.patch
-arm.patch
 icon.patch
-arm-neon.patch
