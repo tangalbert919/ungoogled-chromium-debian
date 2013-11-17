@@ -1,3 +1,34 @@
+chromium-browser (31.0.1650.57-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - Medium-Critical CVE-2013-2931: Various fixes from internal audits,
+      fuzzing and other initiatives.
+    - Medium CVE-2013-6621: Use after free related to speech input elements.
+      Credit to Khalil Zhani.
+    - High CVE-2013-6622: Use after free related to media elements. Credit to
+      cloudfuzzer.
+    - High CVE-2013-6623: Out of bounds read in SVG. Credit to miaubiz.
+    - High CVE-2013-6624: Use after free related to “id” attribute strings.
+      Credit to Jon Butler.
+    - High CVE-2013-6625: Use after free in DOM ranges. Credit to cloudfuzzer.
+    - Low CVE-2013-6626: Address bar spoofing related to interstitial warnings.
+      Credit to Chamal de Silva.
+    - High CVE-2013-6627: Out of bounds read in HTTP parsing. Credit to
+      skylined.
+    - Medium CVE-2013-6628: Issue with certificates not being checked during
+      TLS renegotiation. Credit to Antoine Delignat-Lavaud and Karthikeyan
+      Bhargavan from Prosecco of INRIA Paris.
+    - Medium CVE-2013-6629: Read of uninitialized memory in libjpeg and
+      libjpeg-turbo. Credit to Michal Zalewski of Google.
+    - Medium CVE-2013-6630: Read of uninitialized memory in libjpeg-turbo.
+      Credit to Michal Zalewski of Google.
+    - High CVE-2013-6631: Use after free in libjingle. Credit to Patrik Höglund
+      of the Chromium project.
+    - Critical CVE-2013-6632: Multiple memory corruption issues. Credit to
+      Pinkie Pie.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Sat, 16 Nov 2013 23:15:30 +0000
+
 chromium-browser (30.0.1599.101-1~deb7u1) stable-security; urgency=high
 
   * New stable release:
