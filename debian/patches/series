@@ -18,3 +18,4 @@ cups1.5.patch
 #protobuf.patch
 gcc4.7.patch
 icon.patch
+disable-gn.patch
