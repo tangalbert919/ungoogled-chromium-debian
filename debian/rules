@@ -525,6 +525,9 @@ endif
 	strip debian/tmp/usr/lib/chromium/nacl_irt_x86_32.nexe || true
 	strip debian/tmp/usr/lib/chromium/nacl_irt_x86_64.nexe || true
 
+	# remove unnecessary file
+	rm -f $(CURDIR)/debian/tmp/$(LIB_DIR)/.landmines
+
 binary-install/$(DEBIAN_NAME)::
 	mkdir -p $(CURDIR)/debian/$(DEBIAN_NAME)/usr/share/pixmaps
 	cp -a src/chrome/app/theme/chromium/product_logo_48.png $(CURDIR)/debian/$(DEBIAN_NAME)/usr/share/pixmaps/$(DEBIAN_NAME).png
