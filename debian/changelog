@@ -1,3 +1,57 @@
+chromium-browser (34.0.1847.137-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - High CVE-2014-1740: Use-after-free in WebSockets. Credit to Collin
+      Payne.
+    - High CVE-2014-1741: Integer overflow in DOM ranges. Credit to John
+      Butler.
+    - High CVE-2014-1742: Use-after-free in editing. Credit to cloudfuzzer.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Sat, 17 May 2014 15:48:06 +0000
+
+chromium-browser (34.0.1847.132-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - High CVE-2014-1730: Type confusion in V8. Credit to Anonymous.
+    - High CVE-2014-1731: Type confusion in DOM. Credit to John Butler.
+    - High CVE-2014-1736: Integer overflow in V8.  Credit to SkyLined working
+      with HP's Zero Day Initiative
+    - Medium CVE-2014-1732: Use-after-free in Speech Recognition. Credit to
+      Khalil Zhani
+    - Medium CVE-2014-1733: Compiler bug in Seccomp-BPF. Credit to Jed Davis
+    - CVE-2014-1734: Various fixes from internal audits, fuzzing and other
+      initiatives.
+    - CVE-2014-1735: Multiple vulnerabilities in V8 fixed in version
+      3.24.35.33.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Sat, 03 May 2014 16:04:19 +0000
+
+chromium-browser (34.0.1847.116-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - High CVE-2014-1716: UXSS in V8. Credit to Anonymous.
+    - High CVE-2014-1717: OOB access in V8. Credit to Anonymous.
+    - High CVE-2014-1718: Integer overflow in compositor. Credit to Aaron
+      Staple.
+    - High CVE-2014-1719: Use-after-free in web workers. Credit to Collin
+      Payne.
+    - High CVE-2014-1720: Use-after-free in DOM. Credit to cloudfuzzer.
+    - High CVE-2014-1721: Memory corruption in V8. Credit to Christian Holler.
+    - High CVE-2014-1722: Use-after-free in rendering. Credit to miaubiz.
+    - High CVE-2014-1723: Url confusion with RTL characters. Credit to George
+      McBay.
+    - High CVE-2014-1724: Use-after-free in speech. Credit to Atte Kettunen.
+    - Medium CVE-2014-1725: OOB read with window property. Credit to
+      Anonymous.
+    - Medium CVE-2014-1726: Local cross-origin bypass. Credit to Jann Horn.
+    - Medium CVE-2014-1727: Use-after-free in forms. Credit to Khalil Zhani.
+    - CVE-2014-1728: Various fixes from internal audits, fuzzing and other
+      initiatives.
+    - CVE-2014-1729: Multiple vulnerabilities in V8 fixed in version
+      3.24.35.22.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Tue, 15 Apr 2014 01:02:54 +0000
+
 chromium-browser (33.0.1750.152-1~deb7u1) stable-security; urgency=high
 
   * New stable release:
