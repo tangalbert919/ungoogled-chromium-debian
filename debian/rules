@@ -86,6 +86,13 @@ endif
 
 #disable tcmalloc
 GYP_DEFINES += linux_use_tcmalloc=0
+GYP_DEFINES += use_allocator=none
+
+# don't use ash or ozone
+GYP_DEFINES += use_ash=0 use_ozone=0
+
+# avoid mojo, which requires ninja to build
+GYP_DEFINES += use_mojo=0
 
 # Use explicit library dependencies instead of dlopen.
 # This makes breakages easier to detect by revdep-rebuild.
@@ -460,7 +467,7 @@ ifneq (,$(GYP_DEFINES))
 debian/configure-stamp: GYP_ENV += GYP_DEFINES="$(GYP_DEFINES)"
 endif
 debian/configure-stamp:
-	cd $(SRC_DIR) && $(GYP_ENV) python build/gyp_chromium --no-circular-check build/all.gyp
+	cd $(SRC_DIR) && $(GYP_ENV) python build/gyp_chromium --check --debug=includes
 	touch $@
 	# Populate the LASTCHANGE file template as we no longer have the VCS
 	# files at this point
