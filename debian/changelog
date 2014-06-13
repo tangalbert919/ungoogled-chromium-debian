@@ -1,3 +1,9 @@
+chromium-browser (35.0.1916.114-1~deb7u2) stable-security; urgency=high
+
+  * Add flags to avoid memory allocation issues while linking on i386.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Fri, 30 May 2014 01:14:45 +0000
+
 chromium-browser (35.0.1916.114-1~deb7u1) stable-security; urgency=high
 
   * New upstream stable release:
