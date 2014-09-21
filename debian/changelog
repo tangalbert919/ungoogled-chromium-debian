@@ -1,3 +1,15 @@
+chromium-browser (35.0.1916.153-1~deb7u1) stable-security; urgency=high
+
+  * New upstream stable release:
+    - CVE-2014-3154: Use-after-free in filesystem api. Credit to Collin Payne.
+    - CVE-2014-3155: Out-of-bounds read in SPDY. Credit to James March, Daniel
+      Sommermann and Alan Frindell of Facebook.
+    - CVE-2014-3156: Buffer overflow in clipboard. Credit to Atte Kettunen.
+    - CVE-2014-3157: Heap overflow in media.
+  * Don't set sse2 compiler flags on i386 (closes: #750361).
+
+ -- Michael Gilbert <mgilbert@debian.org>  Fri, 13 Jun 2014 04:15:39 +0000
+
 chromium-browser (35.0.1916.114-1~deb7u2) stable-security; urgency=high
 
   * Add flags to avoid memory allocation issues while linking on i386.
