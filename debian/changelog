@@ -1,3 +1,12 @@
+chromium-browser (42.0.2311.135-1~deb8u1) jessie-security; urgency=high
+
+  * New upstream stable release:
+    - CVE-2015-1243: Use-after-free in DOM. Credit to Saif El-Sherei.
+    - CVE-2015-1250: Various fixes from internal audits, fuzzing and other
+      initiatives.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Thu, 30 Apr 2015 23:32:05 +0000
+
 chromium-browser (42.0.2311.90-1~deb8u1) jessie-security; urgency=high
 
   * New upstream stable release:
