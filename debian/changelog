@@ -1,3 +1,62 @@
+chromium-browser (44.0.2403.89-1~deb8u1) jessie-security; urgency=high
+
+  * New upstream security release:
+    - CVE-2015-1266: Scheme validation error in WebUI. Credit to anonymous.
+    - CVE-2015-1268: Cross-origin bypass in Blink. Credit to Mariusz Mlynski.
+    - CVE-2015-1267: Cross-origin bypass in Blink. Credit to anonymous.
+    - CVE-2015-1269: Normalization error in HSTS/HPKP preload list. Credit to
+      Mike Ruddy.
+    - CVE-2015-1270: Uninitialized memory read in ICU. Credit to Atte Kettunen.
+    - CVE-2015-1271: Heap-buffer-overflow in pdfium. Credit to cloudfuzzer.
+    - CVE-2015-1272: Use-after-free related to unexpected GPU process
+      termination. Credit to Chamal de Silva.
+    - CVE-2015-1273: Heap-buffer-overflow in pdfium. Credit to makosoft.
+    - CVE-2015-1274: Settings allowed executable files to run immediately after
+      download. Credit to  andrewm.bpi.
+    - CVE-2015-1275: UXSS in Chrome for Android. Credit to WangTao(neobyte).
+    - CVE-2015-1276: Use-after-free in IndexedDB. Credit to Collin Payne.
+    - CVE-2015-1277: Use-after-free in accessibility. Credit to SkyLined.
+    - CVE-2015-1278: URL spoofing using pdf files. Credit to Chamal de Silva.
+    - CVE-2015-1279: Heap-buffer-overflow in pdfium. Credit to mlafon.
+    - CVE-2015-1280: Memory corruption in skia. Credit to cloudfuzzer.
+    - CVE-2015-1281: CSP bypass. Credit to Masato Kinugawa.
+    - CVE-2015-1282: Use-after-free in pdfium. Credit to Chamal de Silva.
+    - CVE-2015-1283: Heap-buffer-overflow in expat. Credit to Huzaifa
+      Sidhpurwala.
+    - CVE-2015-1284: Use-after-free in blink. Credit to Atte Kettunen.
+    - CVE-2015-1285: Information leak in XSS auditor. Credit to gazheyes.
+    - CVE-2015-1286: UXSS in blink. Credit to anonymous.
+    - CVE-2015-1287: SOP bypass with CSS. Credit to filedescriptor.
+    - CVE-2015-1288: Spell checking dictionaries fetched over HTTP. Credit to
+      Mike Ruddy.
+    - CVE-2015-1289: Various fixes from internal audits, fuzzing and other
+      initiatives.
+    - Hotword extension disabled by default (closes: #786909).
+
+ -- Michael Gilbert <mgilbert@debian.org>  Wed, 22 Jul 2015 02:58:38 +0000
+
+chromium-browser (43.0.2357.65-1~deb8u1) jessie-security; urgency=medium
+
+  * New upstream stable release:
+    - CVE-2015-1252: Sandbox escape in Chrome. Credit to anonymous.
+    - CVE-2015-1253: Cross-origin bypass in DOM. Credit to anonymous.
+    - CVE-2015-1254: Cross-origin bypass in Editing. Credit to
+      armin@rawsec.net.
+    - CVE-2015-1255: Use-after-free in WebAudio. Credit to Khalil Zhani.
+    - CVE-2015-1256: Use-after-free in SVG. Credit to Atte Kettunen.
+    - CVE-2015-1251: Use-after-free in Speech. Credit to SkyLined.
+    - CVE-2015-1257: Container-overflow in SVG. Credit to miaubiz.
+    - CVE-2015-1258: Negative-size parameter in Libvpx.  Credit to cloudfuzzer
+    - CVE-2015-1259: Uninitialized value in PDFium. Credit to Atte Kettunen.
+    - CVE-2015-1260: Use-after-free in WebRTC. Credit to Khalil Zhani.
+    - CVE-2015-1261: URL bar spoofing. Credit to Juho Nurminen.
+    - CVE-2015-1262: Uninitialized value in Blink. Credit to miaubiz.
+    - CVE-2015-1263: Insecure download of spellcheck dictionary.  Credit to
+      Mike Ruddy.
+    - CVE-2015-1264: Cross-site scripting in bookmarks. Credit to K0r3Ph1L.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Thu, 21 May 2015 04:38:13 +0000
+
 chromium-browser (42.0.2311.135-1~deb8u1) jessie-security; urgency=high
 
   * New upstream stable release:
