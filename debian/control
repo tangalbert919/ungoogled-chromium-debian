@@ -48,6 +48,7 @@ Build-Depends:
  libdrm-dev,
  libusb-dev,
  libicu-dev,
+ libffi-dev,
  libkrb5-dev,
  libexif-dev,
  libudev-dev,
