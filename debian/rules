@@ -63,8 +63,10 @@ defines+=use_system_re2=1 \
          use_system_libsrtp=1 \
          use_system_jsoncpp=1 \
          use_system_libevent=1 \
-         use_system_harfbuzz=1 \
          use_system_xdg_utils=1 \
+
+# need to use embedded harfbuzz to avoid division by zero
+defines+=use_system_harfbuzz=0 \
 
 # enable proprietary codecs
 defines+=proprietary_codecs=1 \
