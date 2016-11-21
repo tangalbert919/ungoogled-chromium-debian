@@ -1,3 +1,12 @@
+chromium-browser (53.0.2785.143-1~deb8u1) jessie-security; urgency=medium
+
+  * New upstream security release:
+    - CVE-2016-5177: Use after free in V8. Credit to Anonymous
+    - CVE-2016-5178: Various fixes from internal audits, fuzzing and other
+      initiatives.
+
+ -- Michael Gilbert <mgilbert@debian.org>  Sat, 01 Oct 2016 23:13:19 +0000
+
 chromium-browser (53.0.2785.113-1~deb8u1) jessie-security; urgency=medium
 
   * New upstream security release:
