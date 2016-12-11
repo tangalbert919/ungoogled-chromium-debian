@@ -12,89 +12,41 @@ export LDFLAGS+=-Wl,--no-keep-memory -Wl,--reduce-memory-overheads -Wl,--hash-si
 # more verbose linker output
 export LDFLAGS+=-Wl,--trace -Wl,--stats
 
-# use the gold linker to avoid memory exhaustion issues at link time
-export CFLAGS+=-fuse-ld=gold
-export CXXFLAGS+=-fuse-ld=gold
-
-# treat all warnings as errors
-defines=werror=
-
 # use clang instead of gcc
-defines+=clang=1
-defines+=clang_use_chrome_plugins=
+defines=is_clang=true
+defines+=clang_use_chrome_plugins=false
+
+# set the appropriate cpu architecture
+ifeq (i386,$(shell dpkg-architecture -qDEB_HOST_ARCH))
+defines+=host_cpu=\"x86\"
+endif
+ifeq (amd64,$(shell dpkg-architecture -qDEB_HOST_ARCH))
+defines+=host_cpu=\"x64\"
+endif
 
 # disabled features
-defines+=use_ozone=0 \
-         use_gconf=0 \
-         use_sysroot=0 \
-         use_allocator=none \
-         linux_breakpad=0 \
-         linux_use_libgps=0 \
-         linux_use_gold_flags=0 \
-         linux_use_bundled_gold=0 \
-         linux_use_bundled_binutils=0 \
-         remoting=0 \
-         disable_nacl=1 \
-         enable_remoting_host=0 \
+defines+=is_debug=false \
+         use_gtk3=false \
+         use_ozone=false \
+         use_gconf=false \
+         use_sysroot=false \
+         use_gnome_keyring=false \
+         treat_warnings_as_errors=false \
+         enable_nacl=false \
+         enable_nacl_nonsfi=false \
+         enable_google_now=false \
+         enable_hangout_services_extension=false \
+         enable_iterator_debugging=false \
+         gold_path=\"\" \
+         linux_use_bundled_binutils=false \
 
 # enabled features
-defines+=enable_webrtc=1 \
-         use_gio=1 \
-         use_pulseaudio=1 \
-         use_gnome_keyring=1 \
-         linux_link_libpci=1 \
-         linux_link_gsettings=1 \
-         linux_link_libspeechd=1 \
-         linux_link_gnome_keyring=1 \
-
-# system libraries to use
-defines+=use_system_re2=1 \
-         use_system_yasm=1 \
-         use_system_opus=1 \
-         use_system_zlib=1 \
-         use_system_speex=1 \
-         use_system_expat=1 \
-         use_system_snappy=1 \
-         use_system_libpng=1 \
-         use_system_libxml=1 \
-         use_system_libjpeg=1 \
-         use_system_libwebp=1 \
-         use_system_libxslt=1 \
-         use_system_libsrtp=1 \
-         use_system_jsoncpp=1 \
-         use_system_libevent=1 \
-         use_system_xdg_utils=1 \
-
-# need to use embedded harfbuzz to avoid division by zero
-defines+=use_system_harfbuzz=0 \
-
-# enable proprietary codecs
-defines+=proprietary_codecs=1 \
-         ffmpeg_branding=Chrome \
-
-# use embedded protobuf for now (bug #764911)
-defines+=use_system_protobuf=0 \
-
-# icu
-defines+=use_system_icu=0 \
-         #icu_use_data_file_flag=0 \
-         #want_separate_host_toolset=0 \
-
-# embedded libraries (0 is the default, so just making some notes about the issues)
-#  use_system_libusb=0 requires modified source that exposes libusb_interrupt_handle_event api
-#  use_system_libvpx=0 requires modified source that exposes different api
-#  use_system_sqlite=0 build fails
-#  use_system_ffmpeg=0 build fails
-#  can't use system nss since net/third_party/nss is heavily patched
-#  can't use system ots (open text *summarizer*) since that's not google's ots (open text *sanitizer*)
-
-# make gyp a little more informative
-options+=--check \
-         --debug=includes \
-
-# avoid the need for a special src directory (--depth=. seems to require --no-parallel)
-options+=--depth=. \
-         --no-parallel \
+defines+=use_gio=true \
+         use_gold=true \
+         use_pulseaudio=false \
+         link_pulseaudio=false \
+         proprietary_codecs=true \
+         ffmpeg_branding=\"Chrome\" \
 
 # handle parallel build options
 ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
@@ -105,18 +57,20 @@ endif
 flotpaths=/usr/share/javascript/jquery/*min.js \
           /usr/share/javascript/jquery-flot/*min.js \
 
-# files to exclude from the upstream tarball
-excluded=native_client/NOTICE \
-	 third_party/libsrtp/srtp/doc/rfc3711.txt \
-
 %:
 	dh $@ --parallel
 
 override_dh_auto_configure:
 	for file in $(flotpaths); do ln -sf $$file third_party/flot; done
-	GYP_DEFINES="$(defines)" ./build/gyp_chromium $(options)
+	# strip out system third_party libraries
+	./debian/scripts/unbundle
+	# build gn
+	./tools/gn/bootstrap/bootstrap.py -v -s $(njobs)
+	# configure
+	./out/Release/gn gen out/Release --args="$(defines)"
 
 override_dh_auto_build:
+	./out/Release/gn gen out/Release --args="$(defines)"
 	ninja $(njobs) -C out/Release chrome chrome_sandbox chromedriver
 	mv out/Release/chrome out/Release/chromium || true
 	mv out/Release/chrome.1 out/Release/chromium.1 || true
@@ -152,6 +106,7 @@ override_dh_auto_clean:
 	find . -name \*.pyc -execdir rm -rf {} \;
 	#find . -name config.sub -execdir rm -rf {} \;
 	#find . -name config.guess -execdir rm -rf {} \;
+	dh_auto_clean
 
 ###################### upstream source downloading ############################
 

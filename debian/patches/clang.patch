@@ -1,16 +1,25 @@
 description: use system clang compilers
 author: Michael Gilbert <mgilbert@debian.org>
 
---- a/build/common.gypi
-+++ b/build/common.gypi
-@@ -5985,8 +5985,8 @@
-     ['clang==1 and ((OS!="mac" and OS!="ios") or clang_xcode==0) '
-         'and OS!="win"', {
-       'make_global_settings': [
--        ['CC', '<(make_clang_dir)/bin/clang'],
--        ['CXX', '<(make_clang_dir)/bin/clang++'],
-+        ['CC', '/usr/bin/clang'],
-+        ['CXX', '/usr/bin/clang++'],
-         ['CC.host', '$(CC)'],
-         ['CXX.host', '$(CXX)'],
-       ],
+--- a/build/toolchain/gcc_toolchain.gni
++++ b/build/toolchain/gcc_toolchain.gni
+@@ -482,7 +482,7 @@ template("clang_toolchain") {
+   }
+ 
+   gcc_toolchain(target_name) {
+-    prefix = rebase_path("$clang_base_path/bin", root_build_dir)
++    prefix = "/usr/bin"
+     cc = "$prefix/clang"
+     cxx = "$prefix/clang++"
+     ld = cxx
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -407,7 +407,7 @@ config("compiler") {
+   # clang-cl (used if is_win) doesn't expose this flag.
+   # Currently disabled for nacl since its toolchain lacks this flag (too old).
+   # TODO(zforman): Once nacl's toolchain is updated, remove check.
+-  if (is_clang && is_linux) {
++  if (false) {
+     absolute_path = rebase_path("//.")
+     cflags += [ "-fdebug-prefix-map=$absolute_path=." ]
+   }
