@@ -43,8 +43,7 @@ defines+=is_debug=false \
 # enabled features
 defines+=use_gio=true \
          use_gold=true \
-         use_pulseaudio=false \
-         link_pulseaudio=false \
+         use_pulseaudio=true \
          proprietary_codecs=true \
          ffmpeg_branding=\"Chrome\" \
 

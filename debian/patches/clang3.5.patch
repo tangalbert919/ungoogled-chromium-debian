@@ -11,7 +11,7 @@
      return false;
 --- a/chrome/common/extensions/chrome_extensions_client.h
 +++ b/chrome/common/extensions/chrome_extensions_client.h
-@@ -57,9 +57,9 @@ class ChromeExtensionsClient : public Ex
+@@ -58,9 +58,9 @@ class ChromeExtensionsClient : public Ex
    static ChromeExtensionsClient* GetInstance();
  
   private:
@@ -26,7 +26,7 @@
    // list (except in tests) without consulting the Extensions team first.
 --- a/services/ui/surfaces/surfaces_context_provider.cc
 +++ b/services/ui/surfaces/surfaces_context_provider.cc
-@@ -77,7 +77,7 @@ bool SurfacesContextProvider::BindToCurr
+@@ -78,7 +78,7 @@ bool SurfacesContextProvider::BindToCurr
    gpu::CommandBuffer* command_buffer = command_buffer_proxy_impl_.get();
  
    gles2_helper_.reset(new gpu::gles2::GLES2CmdHelper(command_buffer));

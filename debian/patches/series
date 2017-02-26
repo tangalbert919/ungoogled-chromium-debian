@@ -13,5 +13,9 @@ third-party-cookies-off-by-default.patch
 ps-print.patch
 chromedriver-revision.patch
 
-skia.patch
 webui.patch
+
+gtk2.patch
+webrtc.patch
+webkit.patch
+png12.patch
