@@ -17,7 +17,7 @@ author: Michael Gilbert <mgilbert@debian.org>
  }  // namespace resource_coordinator
 --- a/base/task/sequence_manager/task_queue.cc
 +++ b/base/task/sequence_manager/task_queue.cc
-@@ -50,7 +50,9 @@ TaskQueue::~TaskQueue() {
+@@ -68,7 +68,9 @@ TaskQueue::~TaskQueue() {
    // If we've not been unregistered then this must occur on the main thread.
    DCHECK_CALLED_ON_VALID_THREAD(associated_thread_->thread_checker);
    impl_->SetOnNextWakeUpChangedCallback(RepeatingCallback<void(TimeTicks)>());
@@ -30,7 +30,7 @@ author: Michael Gilbert <mgilbert@debian.org>
  TaskQueue::TaskTiming::TaskTiming(bool has_wall_time, bool has_thread_time)
 --- a/headless/lib/browser/headless_request_context_manager.cc
 +++ b/headless/lib/browser/headless_request_context_manager.cc
-@@ -147,7 +147,8 @@ class HeadlessProxyConfigMonitor
+@@ -165,7 +165,8 @@ class HeadlessProxyConfigMonitor
        public ::network::mojom::ProxyConfigPollerClient {
   public:
    static void DeleteSoon(std::unique_ptr<HeadlessProxyConfigMonitor> instance) {
@@ -40,15 +40,3 @@ author: Michael Gilbert <mgilbert@debian.org>
    }
  
    explicit HeadlessProxyConfigMonitor(
---- a/content/browser/devtools/devtools_http_handler.cc
-+++ b/content/browser/devtools/devtools_http_handler.cc
-@@ -789,7 +789,8 @@ DevToolsHttpHandler::DevToolsHttpHandler
-   base::Thread::Options options;
-   options.message_loop_type = base::MessageLoop::TYPE_IO;
-   if (thread->StartWithOptions(options)) {
--    thread->task_runner()->PostTask(
-+    const scoped_refptr<base::SingleThreadTaskRunner>& runner = thread->task_runner();
-+    runner->PostTask(
-         FROM_HERE,
-         base::BindOnce(&StartServerOnHandlerThread, weak_factory_.GetWeakPtr(),
-                        std::move(thread), std::move(socket_factory),
