@@ -40,3 +40,15 @@ author: Michael Gilbert <mgilbert@debian.org>
    }
  
    explicit HeadlessProxyConfigMonitor(
+--- a/content/browser/devtools/devtools_http_handler.cc
++++ b/content/browser/devtools/devtools_http_handler.cc
+@@ -789,7 +789,8 @@ DevToolsHttpHandler::DevToolsHttpHandler
+   base::Thread::Options options;
+   options.message_loop_type = base::MessageLoop::TYPE_IO;
+   if (thread->StartWithOptions(options)) {
+-    thread->task_runner()->PostTask(
++    const scoped_refptr<base::SingleThreadTaskRunner>& runner = thread->task_runner();
++    runner->PostTask(
+         FROM_HERE,
+         base::BindOnce(&StartServerOnHandlerThread, weak_factory_.GetWeakPtr(),
+                        std::move(thread), std::move(socket_factory),
